@@ -1,0 +1,223 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Customer {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  name     String    @id
+  company  String?
+  email    String?
+  receipts Receipt[]
+
+  @@index([branchId])
+}
+
+model Industry {
+  type      String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches Branch[]
+  products Product[]
+
+  @@index([type])
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  location   String
+  industry   Industry @relation(fields: [industryId], references: [type])
+  industryId String
+
+  warehouses WareHouse[]
+  customers  Customer[]
+  receipts   Receipt[]
+  Transfer   Transfer[]
+
+  @@index([industryId])
+}
+
+model WareHouse {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name         String
+  branch       Branch     @relation(fields: [branchId], references: [id])
+  branchId     String
+  shelves      Shelf[]
+  transferFrom Transfer[] @relation("transferFrom")
+  transferTo   Transfer[] @relation("transferTo")
+
+  @@index(branchId)
+}
+
+model Shelf {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String    @id
+  warehouse   WareHouse @relation(fields: [warehouseId], references: [id])
+  warehouseId String
+
+  productItems      ProductItem[]
+  receiptItems      ReceiptItems[]
+  transferItemsFrom TransferItems[] @relation("shelvesFrom")
+  transferItemsTo   TransferItems[] @relation("shelvesTo")
+
+  @@index(warehouseId)
+}
+
+model Product {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  industry   Industry @relation(fields: [industryId], references: [type])
+  industryId String
+
+  code        String  @id @unique @db.VarChar(13)
+  brand       String
+  description String  @unique
+  imageSrc    String
+  salePrice   Float   @default(0.00)
+  costPrice   Float   @default(0.00)
+  unit        String
+  packing     String
+  status      Boolean
+
+  productItems ProductItem[]
+  receiptItems ReceiptItems[]
+  transferItem TransferItems[]
+
+  @@index(code)
+  @@index(description)
+  @@index(industryId)
+}
+
+model ProductItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product @relation(fields: [productId], references: [code])
+  productId String
+
+  quantity Int
+
+  shelves   Shelf  @relation(fields: [shelvesId], references: [name])
+  shelvesId String
+
+  @@index([productId])
+  @@index([shelvesId])
+}
+
+model Receipt {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  invoiceNumber Int
+
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  customer   Customer @relation(fields: [customerId], references: [name])
+  customerId String
+
+  customerLocation String
+  date             DateTime
+  paymentType      String
+  paidDate         DateTime?
+  finalTotalPrice  Float     @default(0.00)
+  salePerson       String
+  status           Boolean
+
+  receiptItems ReceiptItems[]
+
+  @@index([customerId])
+  @@index([branchId])
+}
+
+model ReceiptItems {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  id String @id @default(cuid())
+
+  product   Product @relation(fields: [productId], references: [code])
+  productId String
+  qty       Int
+  shelves   Shelf   @relation(fields: [shelvesId], references: [name])
+  shelvesId String
+
+  wholeSale  Float   @default(0.00)
+  totalPrice Float   @default(0.00)
+  discount   Int
+  receipt    Receipt @relation(fields: [receiptId], references: [id])
+  receiptId  String
+
+  @@index([productId])
+  @@index([receiptId])
+  @@index([shelvesId])
+}
+
+model Transfer {
+  id            String   @id @default(cuid())
+  createAt      DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  invoiceNumber Int
+
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  date            DateTime
+  warehouseFrom   WareHouse       @relation("transferFrom", fields: [warehouseFromId], references: [id])
+  warehouseTo     WareHouse       @relation("transferTo", fields: [warehouseToId], references: [id])
+  warehouseFromId String
+  warehouseToId   String
+  confirm         Boolean
+  transferItem    TransferItems[]
+
+  @@index([branchId])
+  @@index([warehouseFromId])
+  @@index([warehouseToId])
+}
+
+model TransferItems {
+  created   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  id        String  @id @default(cuid())
+  product   Product @relation(fields: [productId], references: [code])
+  productId String
+
+  shelvesFrom   Shelf    @relation("shelvesFrom", fields: [shelvesFromId], references: [name])
+  shelvesFromId String
+  shelvesTo     Shelf?   @relation("shelvesTo", fields: [shelvesToId], references: [name])
+  shelvesToId   String?
+  qty           Int
+  remark        String
+  transfer      Transfer @relation(fields: [transferId], references: [id])
+  transferId    String
+
+  @@index([transferId])
+  @@index([productId])
+  @@index([shelvesFromId])
+  @@index([shelvesToId])
+}

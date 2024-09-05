@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-100;
+}
+
+
+.hidden-spinner {
+  appearance: none;
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.hidden-spinner::-webkit-inner-spin-button,
+.hidden-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0; /* Remove default margins */
+}
+
+@media print {
+  .print-hidden-spinner {
+    appearance: none;
+    -moz-appearance: textfield; /* Firefox */
+  }
+  
+  .print-hidden-spinner::-webkit-inner-spin-button,
+  .print-hidden-spinner::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0; /* Remove default margins */
+  }
+}
